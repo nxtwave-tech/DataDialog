@@ -52,11 +52,11 @@ class SqlQueryToolkit(SQLDatabaseToolkit):
         ]
 
 
-def get_sql_query_from_user_query(user_query):
+def get_sql_query_from_user_question(user_question):
     st_cb = StreamlitCallbackHandler(st.container())
     agent = _create_sql_agent()
 
-    agent_response = agent({'input': user_query}, callbacks=[st_cb])
+    agent_response = agent({'input': user_question}, callbacks=[st_cb])
 
     sql_query = _extract_sql_query_from_agent_response(agent_response)
 

@@ -9,7 +9,7 @@ from prompts.visualizer import VISUALIZATION_PICKER_PROMPT
 
 
 def get_suggested_visualization_response_from_ai(
-        sql_query_str, user_query_str):
+        sql_query, user_question):
 
     model_name = 'gpt-4'
     chat_api = ChatOpenAI(
@@ -21,8 +21,8 @@ def get_suggested_visualization_response_from_ai(
         SystemMessage(content=VISUALIZATION_PICKER_PROMPT),
         HumanMessage(
             content=f"""
-                user_query: {user_query_str}
-                sql_query: {sql_query_str}
+                user_query: {sql_query}
+                sql_query: {user_question}
             """.strip()
         )
     ]
@@ -33,23 +33,23 @@ def get_suggested_visualization_response_from_ai(
     return visualization_response
 
 
-def plot_visualization_for_user_query(
-        visualization_response, query_op_df):
+def plot_visualization_for_user_question(
+        visualization_response, query_output_df):
 
     # plotting the visualization based on type
     visualization_type = visualization_response["visualization"]
 
     if visualization_type == "bar_chart":
-        _plot_bar_chart(visualization_response, query_op_df)
+        _plot_bar_chart(visualization_response, query_output_df)
 
     elif visualization_type == "line_chart":
-        _plot_line_chart(visualization_response, query_op_df)
+        _plot_line_chart(visualization_response, query_output_df)
 
     elif visualization_type == "pie_chart":
-        _plot_pie_chart(visualization_response, query_op_df)
+        _plot_pie_chart(visualization_response, query_output_df)
 
     elif visualization_type == "stacked_bar_chart":
-        _plot_stacked_bar_chart(visualization_response, query_op_df)
+        _plot_stacked_bar_chart(visualization_response, query_output_df)
 
     elif visualization_type == "not_required" or "not_sure":
         pass
@@ -58,8 +58,8 @@ def plot_visualization_for_user_query(
         print("visualization type not found: ", visualization_type)
 
 
-def _plot_bar_chart(visualization_response, query_op_df):
-    horizontal_chart = alt.Chart(query_op_df).mark_bar().encode(
+def _plot_bar_chart(visualization_response, query_output_df):
+    horizontal_chart = alt.Chart(query_output_df).mark_bar().encode(
         y=alt.Y(visualization_response['x_axis_column_name'] + ':N',
                 title=visualization_response['x_axis_column_name']),
         x=alt.X(visualization_response['y_axis_column_name'] + ':Q',
@@ -75,14 +75,14 @@ def _plot_bar_chart(visualization_response, query_op_df):
     st.altair_chart(horizontal_chart, use_container_width=True)
 
 
-def _plot_line_chart(visualization_response, query_op_df):
-    query_op_df.set_index(
+def _plot_line_chart(visualization_response, query_output_df):
+    query_output_df.set_index(
         visualization_response['x_axis_column_name'], inplace=True)
-    st.line_chart(query_op_df)
+    st.line_chart(query_output_df)
 
 
-def _plot_pie_chart(visualization_response, query_op_df):
-    base = alt.Chart(query_op_df).encode(
+def _plot_pie_chart(visualization_response, query_output_df):
+    base = alt.Chart(query_output_df).encode(
         alt.Theta(visualization_response['value_column_name'] + ":Q",
                   stack=True),
         alt.Color(visualization_response['labels_column_name'] + ":N")
@@ -97,18 +97,18 @@ def _plot_pie_chart(visualization_response, query_op_df):
     st.altair_chart(chart, use_container_width=True)
 
 
-def _plot_stacked_bar_chart(visualization_response, query_op_df):
+def _plot_stacked_bar_chart(visualization_response, query_output_df):
     id_vars = [
         col for col in visualization_response['columns']
         if col not in visualization_response['y_axis_columns']
     ]
-    query_op_df = query_op_df.melt(
+    query_output_df = query_output_df.melt(
         id_vars=id_vars,
         value_vars=visualization_response['y_axis_columns'],
         var_name='variable',
         value_name='value'
     )
-    chart = alt.Chart(query_op_df).mark_bar().encode(
+    chart = alt.Chart(query_output_df).mark_bar().encode(
         x=alt.X(f"{visualization_response['x_axis_columns'][0]}:N",
                 title=visualization_response['x_axis_columns'][0].
                 replace("_", " ").title()),
